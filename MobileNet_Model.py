@@ -138,7 +138,8 @@ def DW_conv_layer(X, w, b, stride, padding):
             for row in range(n_row_prev):
                 for col in range(n_col_prev):
                     rs, re, cs, ce = (stride*row), (stride*row + f), (stride*col), (stride*col + f)
-                    if re > n_row_prev or ce > n_col_prev:
+                    #Not sure if this if statement is correct
+                    if re > n_row_prev  or ce > n_col_prev:
                         continue
                         #print((i, rs,re, cs,ce, d))
                     x_slice =  X_padded[i, rs:re, cs:ce, d] #.reshape(f,f,1)
