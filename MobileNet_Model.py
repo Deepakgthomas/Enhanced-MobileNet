@@ -59,19 +59,19 @@ def conv_forward_layer(X, w, b, stride, padding):
     
     #Z is now g(input) after performing convlution on input
     return Z, A_prev_cache
-
-np.random.seed(1)
-A_prev = np.random.randn(10,4,4,3) #(#images, #rows, #cols, #channels_prev)
-W_prev = np.random.randn(2,2,3,8) #(#rows, #cols, #channels_prev, #channels_out)
-b_prev = np.random.randn(1,1,1,8) #(1,1,1, #channels_out)
-padding = 2
-stride = 2
-
-Z, alpha_cache = conv_forward_layer(A_prev, W_prev, b_prev, stride, padding)
-
-print("Z mean: ", np.mean(Z))
-print("Z [3,2,1]: ",Z[3,2,1])
-print("alpha_cache[0][1][2]: ", alpha_cache[0][2][3])
+#
+#np.random.seed(1)
+#A_prev = np.random.randn(10,4,4,3) #(#images, #rows, #cols, #channels_prev)
+#W_prev = np.random.randn(2,2,3,8) #(#rows, #cols, #channels_prev, #channels_out)
+#b_prev = np.random.randn(1,1,1,8) #(1,1,1, #channels_out)
+#padding = 2
+#stride = 2
+#
+#Z, alpha_cache = conv_forward_layer(A_prev, W_prev, b_prev, stride, padding)
+#
+#print("Z mean: ", np.mean(Z))
+#print("Z [3,2,1]: ",Z[3,2,1])
+#print("alpha_cache[0][1][2]: ", alpha_cache[0][2][3])
 
 def pooling_forward_layer(X, stride, ps, method="max"):
     '''
@@ -104,11 +104,11 @@ def pooling_forward_layer(X, stride, ps, method="max"):
     return A,  A_prev_cache
 
 #test pool forward
-np.random.seed(1)
-A_prev = np.random.randn(2,4,4,3) #(#images, #rows, #cols, #channels_prev)
-padding = 2
-stride = 2
-A, A_prev_cache = pooling_forward_layer(A_prev, stride, 3, method="avg")
+#np.random.seed(1)
+#A_prev = np.random.randn(2,4,4,3) #(#images, #rows, #cols, #channels_prev)
+#padding = 2
+#stride = 2
+#A, A_prev_cache = pooling_forward_layer(A_prev, stride, 3, method="avg")
                
 def DW_conv_layer(X, w, b, stride, padding):
     
@@ -147,16 +147,15 @@ def DW_conv_layer(X, w, b, stride, padding):
     return out
 
 #Test DW Layer
-np.random.seed(1)
-A_prev = np.random.randn(1,112,112,64) #(#images, #rows, #cols, #channels_prev)
-W_prev = np.random.randn(3,3,64) #(#rows, #cols, #channels_prev)
-b_prev = np.random.randn(1,1,64) #(1,1,1, #channels_out)
-padding = 1
-stride = 2
-
-Z = DW_conv_layer(A_prev, W_prev, b_prev, stride, padding)
-         
-
+#np.random.seed(1)
+#A_prev = np.random.randn(1,112,112,64) #(#images, #rows, #cols, #channels_prev)
+#W_prev = np.random.randn(3,3,64) #(#rows, #cols, #channels_prev)
+#b_prev = np.random.randn(1,1,64) #(1,1,1, #channels_out)
+#padding = 1
+#stride = 2
+#
+#Z = DW_conv_layer(A_prev, W_prev, b_prev, stride, padding)
+#         
 
 def pointwise_conv_layer(X, w, b, stride, padding):
 
@@ -190,20 +189,55 @@ def pointwise_conv_layer(X, w, b, stride, padding):
                     x_slice = X[i, rs:re, cs:ce, :]
                     out[i, row, col, d] = perform_convolution(x_slice, w[:,:,:], b[:,:,d]) 
     
+    #need to add in relu and batch norm
     return out
 
 
 #Test Pointwise Layer
-np.random.seed(1)
-A_prev = np.random.randn(1,56,56,64) #(#images, #rows, #cols, #channels_prev)
-W_prev = np.random.randn(1,1,64) #(#rows, #cols, #channels_prev)
-b_prev = np.random.randn(1,1,64) #(1,1,1, #channels_out)
-padding = 0
-stride = 1
+#np.random.seed(1)
+#A_prev = np.random.randn(1,56,56,64) #(#images, #rows, #cols, #channels_prev)
+#W_prev = np.random.randn(1,1,64) #(#rows, #cols, #channels_prev)
+#b_prev = np.random.randn(1,1,64) #(1,1,1, #channels_out)
+#padding = 0
+#stride = 1
+#
+#Z = pointwise_conv_layer(A_prev, W_prev, b_prev, stride, padding)  
 
-Z = pointwise_conv_layer(A_prev, W_prev, b_prev, stride, padding)  
 
-def conv_back_layer():
+def conv_back_layer(dA, cache):
+    #extract previous layer elements
+    X_prev, weights, bias, stride, padding = cache
+    m, n_row_prev, n_col_prev, n_depth_prev = X_prev.shape
+    f, f, n_depth_prev, n_depth = w.shape
+    
+    #get dimensions of gradient cost function
+    m, n_row, n_col, n_depth = dA.shape
+    
+    #output dimensions, going backward in the network so its the same dimensions of X_prev
+    dA_prev = np.zeros((m, n_row_prev, n_col_prev, n_depth_prev))
+    dW = np.zeros((f,f, n_depth_prev, n_depth))
+    db = np.zeros((f,f,n_depth_prev, n_depth))
+    
+    #Add padding to previous layer
+    X_prev_padded = zero_padding(X_prev, padding)
+    dX_prev_padded = get_padding(dX_prev, padding)
+    
+    
+    #backpropagation 
+    for i in range(m):
+        for row in range(n_row) :
+            for col in range(n_col):
+                for d in range(n_depth):
+                    rs, re, cs, ce = (stride*row), (stride*row + f), (stride*col), (stride*col + f)
+                    x_slice = X_prev_padded[i, rs:re, cs:ce, :]
+                    dA_prev_padded[i, rs:re, cs:ce, :] += w[:,:,:,d]*dA[i, row, col, d]
+                    dW[:,:,:,d] += x_slice*dA[i, row, col, d]
+                    db[:,:,:,d] += dA[i, row, col, d]
+        dA_prev[i,:,:,:] = dA_prev_padded[i, padding:-padding, padding:-padding, :]
+    
+    return dA_prev, dW, db
+                    
+    
     
     
 def pool_back_layer(dA, cache, method="max"):
@@ -212,7 +246,7 @@ def pool_back_layer(dA, cache, method="max"):
     m, n_row_prev, n_col_prev, n_depth_prev = X_prev.shape
     m, n_row, n_col, n_depth = dA.shape
     
-    #output dimensions, going backward in the network so its the same dimensions at X_prev
+    #output dimensions, going backward in the network so its the same dimensions of X_prev
     dA_prev = np.zeros_like(X_prev)
     
     for i in range(m):
@@ -230,15 +264,17 @@ def pool_back_layer(dA, cache, method="max"):
                         dA_prev[i, rs:re, cs:ce, d] += avg
                         
     return dA_prev
-                        
-    
-    
-    
-    
-    
+
+#need to completed                        
+def depthwise_back_layer():
+    return None
+
+#need to complete
+def pointwise_back_layer():
+    return None
 
 def RMSprop():
-    
+    return None
     
 def initalize_weights(dim):
     '''
@@ -267,7 +303,7 @@ def training(images, n_classes, batch_size, n_epochs):
         pickle.dumb(params, file)
         
         
-    return cost
+    return None
     
 
 
