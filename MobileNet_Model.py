@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[5]:
 
 
 import numpy as np
@@ -274,6 +278,14 @@ def pointwise_back_layer():
     return None
 
 def RMSprop():
+    'Taken verbatim from http://cs231n.stanford.edu/slides/2019/cs231n_2019_lecture08.pdf'
+    
+    grad_squared=0
+    while True:
+        dx=compute_gradient(x)
+        grad_squared=np.multiply(decay_rate,grad_squared+(1-decay_rate),dx,dx)
+        x-=np.multiply(learning_rate,dx/(np.sqrt(grad_squared)+1e-7))
+        
     return None
     
 def initalize_weights(dim):
@@ -296,6 +308,9 @@ def training(images, n_classes, batch_size, n_epochs):
         
         for batch in range(batch_size):
             
+            #####Entering something here
+            1==1
+            
     
 
     #export model with pickle
@@ -307,14 +322,8 @@ def training(images, n_classes, batch_size, n_epochs):
     
 
 
-            
-    
+# In[ ]:
 
 
 
 
-
-
-
-
-    
